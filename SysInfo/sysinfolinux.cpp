@@ -28,8 +28,9 @@ double SysInfoLinux::memoryUsed()
 
     qulonglong usedMemory = memInfo.totalram - memInfo.freeram;
     usedMemory += memInfo.totalswap - memInfo.freeswap;
+    usedMemory *= memInfo.mem_unit;
 
-    double percent = (double) totalMemory / (double) usedMemory * 100.0;
+    double percent = (double) usedMemory / (double) totalMemory * 100.0;
 
     return qBound(0.0, percent, 100.0);
 }
@@ -43,7 +44,7 @@ double SysInfoLinux::cpuLoadAverage()
 
     double overall = (secondSample[0] - firstSample[0]) + (secondSample[1] - firstSample[1]) + (secondSample[2] - firstSample[2]);
     double total = overall + (secondSample[3] - firstSample[3]);
-    double percent = total / overall * 100.0;
+    double percent = (overall / total) * 100.0;
 
     return qBound(0.0, percent, 100.0);
 }
@@ -53,7 +54,7 @@ QVector<qulonglong> SysInfoLinux::cpuRawData()
     QFile file("/proc/stat");
     if (! file.open(QIODevice::ReadOnly))
     {
-        qFatal() << "Failed to open /proc/stat!";
+        qFatal("Failed to open /proc/stat!");
     }
 
     QByteArray line = file.readLine();
@@ -64,10 +65,10 @@ QVector<qulonglong> SysInfoLinux::cpuRawData()
     qulonglong totalSystem = 0;
     qulonglong totalIdle = 0;
 
-    int matchedParams = std::sscanf("cpu %llu %llu %llu %llu", &totalUser, &totalUserNice, &totalSystem, &totalIdle);
+    int matchedParams = std::sscanf(line.data(), "cpu %llu %llu %llu %llu", &totalUser, &totalUserNice, &totalSystem, &totalIdle);
     if (matchedParams != 4)
     {
-        qFatal() << "/proc/stat was malformed!";
+        qFatal("/proc/stat was malformed!");
     }
 
     QVector<qulonglong> result;
