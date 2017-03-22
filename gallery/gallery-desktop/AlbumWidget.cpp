@@ -5,6 +5,7 @@
 #include <QInputDialog>
 
 #include "AlbumModel.h"
+#include "PictureDelegate.h"
 #include "PictureModel.h"
 #include "ThumbnailProxyModel.h"
 
@@ -23,6 +24,7 @@ AlbumWidget::AlbumWidget(QWidget *parent) :
     ui->thumbnailListView->setResizeMode(QListView::Adjust);
     ui->thumbnailListView->setFlow(QListView::LeftToRight);
     ui->thumbnailListView->setWrapping(true);
+    ui->thumbnailListView->setItemDelegate(new PictureDelegate(this));
 
     connect(ui->thumbnailListView, &QListView::doubleClicked, this, &AlbumWidget::pictureActivated);
     connect(ui->deleteButton, &QPushButton::clicked, this, &AlbumWidget::deleteAlbum);
@@ -147,7 +149,9 @@ void AlbumWidget::addPictures()
             Picture picture(fileName);
             lastIndex = pictureModel->pictureModel()->addPicture(picture);
         }
-        ui->thumbnailListView->setCurrentIndex(lastIndex);
+
+        QModelIndex proxyModelIndex = pictureModel->index(lastIndex.row(), lastIndex.column());
+        ui->thumbnailListView->setCurrentIndex(proxyModelIndex);
     }
 }
 

@@ -1,6 +1,8 @@
 #include "PictureDao.h"
 
+#include <QDebug>
 #include <QSqlDatabase>
+#include <QSqlError>
 #include <QSqlQuery>
 #include <QVariant>
 
@@ -14,17 +16,31 @@ void PictureDao::init() const
     if (!db_.tables().contains("pictures"))
     {
         QSqlQuery query(db_);
-        query.exec("CREATE TABLE pictures (id INTEGER PRIMARY KEY AUTOINCREMENT, album_id INTEGER, url TEXT");
+        query.exec("CREATE TABLE pictures (id INTEGER PRIMARY KEY AUTOINCREMENT, album_id INTEGER, url TEXT)");
     }
 }
 
 void PictureDao::addPictureInAlbum(int albumId, Picture &picture) const
 {
+    qDebug() << "Preparing query; albumId=" << albumId << " url=" << picture.fileUrl().toString();
+
     QSqlQuery query(db_);
-    query.prepare("INSERT INTO pictures (album_id, url) VALUES (:album, :url)");
+    bool didPrepare = query.prepare("INSERT INTO pictures (album_id, url) VALUES (:album , :url)");
+    if (! didPrepare)
+    {
+        qDebug() << "Error preparing query: " << query.lastError().text();
+        return;
+    }
+
     query.bindValue(":album", albumId);
-    query.bindValue(":url", picture.fileUrl());
-    query.exec();
+    query.bindValue(":url", picture.fileUrl().toString());
+    bool queryExecuted = query.exec();
+
+    qDebug() << "Query success: " << queryExecuted;
+    if (! queryExecuted)
+    {
+        qDebug() << "Error: " << query.lastError().text();
+    }
 
     picture.setId(query.lastInsertId().toInt());
 }
@@ -48,8 +64,20 @@ void PictureDao::removePicturesForAlbum(int albumId) const
 std::unique_ptr<std::vector<std::unique_ptr<Picture> > > PictureDao::picturesForAlbum(int albumId) const
 {
     QSqlQuery query(db_);
-    query.prepare("SELECT id, url FROM pictures WHERE album_id = :id");
+    query.setForwardOnly(true);
+
+    if (!query.prepare("SELECT id, url FROM pictures WHERE album_id = :id"))
+    {
+        qCritical() << "Failed to prepare pic query";
+        qCritical() << query.lastError().text();
+    }
     query.bindValue(":id", albumId);
+
+    if (! query.exec())
+    {
+        qCritical() << "Failed to execute pic query";
+        qCritical() << query.lastError().text();
+    }
 
     std::unique_ptr<std::vector<std::unique_ptr<Picture>>> result(new std::vector<std::unique_ptr<Picture>>);
     while (query.next())
