@@ -1,5 +1,7 @@
 #include "ThumbnailProxyModel.h"
 
+#include <QDebug>
+
 #include "PictureModel.h"
 
 const unsigned int THUMBNAIL_SIZE = 350;

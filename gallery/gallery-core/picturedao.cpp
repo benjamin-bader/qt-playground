@@ -22,8 +22,6 @@ void PictureDao::init() const
 
 void PictureDao::addPictureInAlbum(int albumId, Picture &picture) const
 {
-    qDebug() << "Preparing query; albumId=" << albumId << " url=" << picture.fileUrl().toString();
-
     QSqlQuery query(db_);
     bool didPrepare = query.prepare("INSERT INTO pictures (album_id, url) VALUES (:album , :url)");
     if (! didPrepare)
@@ -36,10 +34,9 @@ void PictureDao::addPictureInAlbum(int albumId, Picture &picture) const
     query.bindValue(":url", picture.fileUrl().toString());
     bool queryExecuted = query.exec();
 
-    qDebug() << "Query success: " << queryExecuted;
     if (! queryExecuted)
     {
-        qDebug() << "Error: " << query.lastError().text();
+        qCritical() << "Error: " << query.lastError().text();
     }
 
     picture.setId(query.lastInsertId().toInt());
